@@ -1,0 +1,91 @@
+{
+    "spinner": [
+        "·",
+        "✢",
+        "✳",
+        "✶",
+        "✻",
+        "✽"
+    ],
+    "spinnerIntervalMs": 180,
+    "shineIntervalMs": 60,
+    "verbs": [
+        "Mogging",
+        "Looksmaxxing",
+        "Aurafarming",
+        "Sloppifying",
+        "Chilling",
+        "Experimenting",
+        "Inferring",
+        "Orchestrating",
+        "Patternmatching",
+        "Flopcounting",
+        "Steering",
+        "Synthesizing",
+        "Thinking",
+        "Throughputmaxxing",
+        "Vibecoding",
+        "Grasstouching",
+        "Gaslighting",
+        "Tracing",
+        "Seatadjusting",
+        "Knownresultsrediscovering"
+    ],
+    "modelColors": {
+        "gpt": {
+            "r": 48,
+            "g": 48,
+            "b": 48
+        },
+        "claude": {
+            "r": 217,
+            "g": 119,
+            "b": 87
+        },
+        "gemini": {
+            "r": 173,
+            "g": 137,
+            "b": 235
+        },
+        "minimax": {
+            "r": 180,
+            "g": 57,
+            "b": 60
+        },
+        "gemma": {
+            "r": 0,
+            "g": 83,
+            "b": 214
+        },
+        "nvidia": {
+            "r": 118,
+            "g": 185,
+            "b": 0
+        },
+        "deepseek": {
+            "r": 77,
+            "g": 107,
+            "b": 254
+        },
+        "kimi": {
+            "r": 4,
+            "g": 0,
+            "b": 0
+        },
+        "qwen": {
+            "r": 97,
+            "g": 92,
+            "b": 237
+        },
+        "glm": {
+            "r": 31,
+            "g": 99,
+            "b": 236
+        }
+    },
+    "modelFallbackColor": {
+        "r": 249,
+        "g": 249,
+        "b": 249
+    }
+}
