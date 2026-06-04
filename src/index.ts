@@ -63,8 +63,7 @@ function loadFlairSettings(
 export default function (pi: ExtensionAPI) {
     pi.on("session_start", (_event, ctx) => {
         // Overlay persisted user settings on top of built-in defaults.
-        const notify = (msg: string, level: "info" | "warning" | "error") => ctx.ui.notify(msg, level);
-        const userSettings = loadFlairSettings(ctx.cwd, notify);
+        const userSettings = loadFlairSettings(ctx.cwd, ctx.ui.notify);
         loadSettings(userSettings ?? undefined);
 
         if (ctx.model) {

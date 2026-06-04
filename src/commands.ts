@@ -181,7 +181,7 @@ function cmdAdd(ctx: ExtensionContext, args: string[]): void {
     }
 
     setModelColor(name, color);
-    saveModelColors((msg, level) => ctx.ui.notify(msg, level));
+    saveModelColors(ctx.ui.notify);
     refreshAfterChange(ctx, `✨ ${name} → ${formatColor(color)}`);
 }
 
@@ -194,7 +194,7 @@ function cmdRemove(ctx: ExtensionContext, name: string | undefined): void {
         ctx.ui.notify(`"${name}" not in model colours.`, "warning");
         return;
     }
-    saveModelColors((msg, level) => ctx.ui.notify(msg, level));
+    saveModelColors(ctx.ui.notify);
     ctx.ui.notify(`Removed "${name}" from model colours.`, "info");
     if (ctx.model) {
         applyModelIndicator(ctx, ctx.model.id);
@@ -204,7 +204,7 @@ function cmdRemove(ctx: ExtensionContext, name: string | undefined): void {
 
 function cmdClear(ctx: ExtensionContext): void {
     clearModelColors();
-    saveModelColors((msg, level) => ctx.ui.notify(msg, level));
+    saveModelColors(ctx.ui.notify);
     ctx.ui.notify("All model colours cleared.", "info");
     if (ctx.model) {
         applyModelIndicator(ctx, ctx.model.id);
@@ -214,7 +214,7 @@ function cmdClear(ctx: ExtensionContext): void {
 
 function cmdReset(ctx: ExtensionContext): void {
     resetModelColors();
-    saveModelColors((msg, level) => ctx.ui.notify(msg, level));
+    saveModelColors(ctx.ui.notify);
     ctx.ui.notify("Model colours reset to defaults.", "info");
     if (ctx.model) {
         applyModelIndicator(ctx, ctx.model.id);
