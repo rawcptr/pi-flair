@@ -5,7 +5,8 @@ colours that message (that you can change) with a color you choose & sweeps a br
 band across it left-to-right.
 It also cycles through randomised spinner-verbs on every model turn if you add them to the config.
 
-<video src="https://github.com/rawcptr/pi-flair/raw/refs/heads/main/assets/demo.mp4" controls width="40%"></video>
+https://github.com/user-attachments/assets/1efba3de-6201-422e-ad56-4f04ad62148e
+
 
 ## Install
 
