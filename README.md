@@ -68,7 +68,7 @@ Example configuration file:
 }
 ```
 
-Check out the full sample [configuration file](./pi/flair.json)
+Check out the full sample [configuration file](./.pi/flair.json).
 
 ### Settings reference
 
