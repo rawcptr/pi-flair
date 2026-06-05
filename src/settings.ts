@@ -12,6 +12,8 @@
  *   3. .pi/flair.json          (project-local overrides)
  */
 
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { type RgbColor } from "./color.js";
 
 /** Persisted-settings shape — the JSON schema for flair.json. */
@@ -47,7 +49,8 @@ interface RuntimeState {
 	shineIntervalMs: number;
 	verbs: string[];
 	fallbackColor: RgbColor;
-	modelColors: Record<string, RgbColor>;
+	globalModelColors: Record<string, RgbColor>;
+	localModelColors: Record<string, RgbColor>;
 }
 
 let state: RuntimeState = createDefaultState();
@@ -59,21 +62,34 @@ function createDefaultState(): RuntimeState {
 		shineIntervalMs: DEFAULT_SHINE_INTERVAL,
 		verbs: [...DEFAULT_VERBS],
 		fallbackColor: { ...DEFAULT_FALLBACK },
-		modelColors: {},
+		globalModelColors: {},
+		localModelColors: {},
 	};
 }
 
 // Load / reload (starts from defaults then overlays persisted settings)
 
-export function loadSettings(persisted?: FlairSettings): void {
-	state = createDefaultState();
+export function loadSettings(persisted?: FlairSettings, scope?: "global" | "local"): void {
+	if (!persisted && scope === undefined) {
+		state = createDefaultState();
+		return;
+	}
 	if (!persisted) return;
 	if (persisted.spinner) state.spinnerChars = [...persisted.spinner];
 	if (persisted.spinnerIntervalMs !== undefined) state.spinnerIntervalMs = persisted.spinnerIntervalMs;
 	if (persisted.shineIntervalMs !== undefined) state.shineIntervalMs = persisted.shineIntervalMs;
 	if (persisted.verbs) state.verbs = [...persisted.verbs];
 	if (persisted.modelFallbackColor) state.fallbackColor = { ...persisted.modelFallbackColor };
-	if (persisted.modelColors) state.modelColors = { ...persisted.modelColors };
+	if (scope === "global" && persisted.modelColors) {
+		state.globalModelColors = { ...persisted.modelColors };
+	}
+	if (scope === "local" && persisted.modelColors) {
+		state.localModelColors = { ...persisted.modelColors };
+	}
+	// No scope → backward-compat path (tests, legacy callers)
+	if (!scope && persisted.modelColors) {
+		state.globalModelColors = { ...persisted.modelColors };
+	}
 }
 
 // Read accessors
@@ -99,24 +115,47 @@ export function getFallbackColor(): RgbColor {
 }
 
 export function getModelColors(): Readonly<Record<string, RgbColor>> {
-	return state.modelColors;
+	return { ...state.globalModelColors, ...state.localModelColors };
 }
 
 // Model colour mutators
 
-export function setModelColor(name: string, color: RgbColor): void {
-	state.modelColors[name.toLowerCase()] = color;
+export function setModelColor(name: string, color: RgbColor, scope: "global" | "local" = "global"): void {
+	const key = name.toLowerCase();
+	if (scope === "global") state.globalModelColors[key] = color;
+	else state.localModelColors[key] = color;
 }
 
-export function deleteModelColor(name: string): boolean {
+export function deleteModelColor(name: string, scope: "global" | "local" = "global"): boolean {
 	const key = name.toLowerCase();
-	if (!(key in state.modelColors)) return false;
-	delete state.modelColors[key];
+	const target = scope === "global" ? state.globalModelColors : state.localModelColors;
+	if (!(key in target)) return false;
+	delete target[key];
 	return true;
 }
 
-export function clearModelColors(): void {
-	state.modelColors = {};
+export function clearModelColors(scope: "global" | "local" = "global"): void {
+	if (scope === "global") state.globalModelColors = {};
+	else state.localModelColors = {};
+}
+
+/** Report which scope a colour key belongs to. */
+export function getColorScope(name: string): "global" | "local" | "both" {
+	const key = name.toLowerCase();
+	const inGlobal = key in state.globalModelColors;
+	const inLocal = key in state.localModelColors;
+	if (inGlobal && inLocal) return "both";
+	if (inLocal) return "local";
+	return "global";
+}
+
+/** Return the global color for a key that is shadowed by a local entry, if any. */
+export function getShadowedColor(name: string): RgbColor | undefined {
+	const key = name.toLowerCase();
+	if (key in state.globalModelColors && key in state.localModelColors) {
+		return state.globalModelColors[key];
+	}
+	return undefined;
 }
 
 
@@ -124,6 +163,62 @@ export function clearModelColors(): void {
 
 export function collectSettings(): FlairSettings {
 	return {
-		modelColors: { ...state.modelColors },
+		modelColors: { ...getModelColors() },
 	};
+}
+
+// File I/O
+
+/**
+ * Read a flair.json file and return parsed FlairSettings.
+ * Returns {} if the file is missing or corrupt.
+ */
+export function readFlairSettings(
+	path: string,
+	notify?: (msg: string, level: "info" | "warning" | "error") => void,
+): FlairSettings {
+	try {
+		return JSON.parse(readFileSync(path, "utf-8"));
+	} catch (cause: any) {
+		if (cause?.code !== "ENOENT") {
+			notify?.(
+				`flair: corrupt settings (${path}): ${String(cause)}`,
+				"warning",
+			);
+		}
+	}
+	return {};
+}
+
+/**
+ * Save current runtime state to a flair.json file.
+ * Reads existing file (if any), merges current modelColors on top,
+ * then writes back. Best-effort (silent on failure).
+ */
+export function saveFlairSettings(
+	path: string,
+	scope: "global" | "local",
+	notify?: (msg: string, level: "info" | "warning" | "error") => void,
+): void {
+	try {
+		mkdirSync(dirname(path), { recursive: true });
+		let existing: Record<string, unknown> = {};
+		try {
+			existing = JSON.parse(readFileSync(path, "utf-8"));
+		} catch (cause: any) {
+			if (cause?.code !== "ENOENT") {
+				notify?.(
+					`flair: corrupt settings file, starting fresh: ${String(cause)}`,
+					"warning",
+				);
+			}
+		}
+		existing.modelColors =
+			scope === "global"
+				? { ...state.globalModelColors }
+				: { ...state.localModelColors };
+		writeFileSync(path, JSON.stringify(existing, null, 2) + "\n");
+	} catch {
+		notify?.("flair: failed to save settings", "error");
+	}
 }

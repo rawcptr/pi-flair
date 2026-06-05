@@ -6,7 +6,6 @@
  * Users can assign brand colours to model names via /flair add.
  */
 
-import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
@@ -20,49 +19,24 @@ import {
     stopShineAnimation,
     syncModelFromContext,
 } from "./indicator.js";
-import { loadSettings, getSpinnerChars, getSpinnerIntervalMs, type FlairSettings } from "./settings.js";
+import { loadSettings, getSpinnerChars, getSpinnerIntervalMs, readFlairSettings } from "./settings.js";
 import { registerFlairCommand } from "./commands.js";
-
-/**
- * Load and merge user settings from the two config scopes.
- * Returns null when no user-settings file exists.
- * Errors on existing-but-corrupt files are reported via the notification callback.
- */
-function loadFlairSettings(
-    cwd: string,
-    notify: (msg: string, level: "info" | "warning" | "error") => void,
-): FlairSettings | null {
-    const globalPath = join(getAgentDir(), "flair.json");
-    const projectPath = join(cwd, ".pi", "flair.json");
-
-    let result: FlairSettings = {};
-
-    // Read global
-    if (existsSync(globalPath)) {
-        try {
-            result = { ...result, ...JSON.parse(readFileSync(globalPath, "utf-8")) };
-        } catch (cause) {
-            notify(`flair: corrupt global settings (${globalPath}): ${String(cause)}`, "warning");
-        }
-    }
-
-    // Read project-local (overrides global)
-    if (existsSync(projectPath)) {
-        try {
-            result = { ...result, ...JSON.parse(readFileSync(projectPath, "utf-8")) };
-        } catch (cause) {
-            notify(`flair: corrupt project settings (${projectPath}): ${String(cause)}`, "warning");
-        }
-    }
-
-    return Object.keys(result).length > 0 ? result : null;
-}
 
 export default function (pi: ExtensionAPI) {
     pi.on("session_start", (_event, ctx) => {
         // Overlay persisted user settings on top of built-in defaults.
-        const userSettings = loadFlairSettings(ctx.cwd, ctx.ui.notify);
-        loadSettings(userSettings ?? undefined);
+        // Load chain: defaults → global → local (last wins)
+        loadSettings();
+        const global = readFlairSettings(
+            join(getAgentDir(), "flair.json"),
+            ctx.ui.notify,
+        );
+        if (Object.keys(global).length > 0) loadSettings(global, "global");
+        const local = readFlairSettings(
+            join(ctx.cwd, ".pi", "flair.json"),
+            ctx.ui.notify,
+        );
+        if (Object.keys(local).length > 0) loadSettings(local, "local");
 
         if (ctx.model) {
             applyModelIndicator(ctx, ctx.model.id);
