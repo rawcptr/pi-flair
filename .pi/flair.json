@@ -1,4 +1,5 @@
 {
+    "$schema": "https://gist.githubusercontent.com/rawcptr/784b6bbefefc59c4e7e991077404efc1/raw/flair.schema.json",
     "spinner": [
         "·",
         "✢",
