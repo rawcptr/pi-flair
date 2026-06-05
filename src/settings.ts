@@ -119,9 +119,6 @@ export function clearModelColors(): void {
 	state.modelColors = {};
 }
 
-export function resetModelColors(): void {
-	state.modelColors = {};
-}
 
 // Persistence snapshot
 

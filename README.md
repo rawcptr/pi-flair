@@ -25,7 +25,6 @@ pi install git:github.com/rawcptr/pi-flair
 | `/flair add <name> <colour>` | Assign or update a model colour (multiple names allowed: `/flair add llama mistral #ff8800`) |
 | `/flair remove <name>` | Remove a model colour assignment |
 | `/flair clear` | Clear all model colours |
-| `/flair reset` | Restore defaults (empty colour map) |
 
 ### Colour formats
 

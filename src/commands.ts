@@ -9,7 +9,6 @@
  *   /flair add <name> <color>    — assign/update a model colour (hex or rgb)
  *   /flair remove <name>         — remove a model colour
  *   /flair clear                 — clear all model colours
- *   /flair reset                 — restore defaults
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -36,7 +35,6 @@ import {
     clearModelColors,
     deleteModelColor,
     getModelColors,
-    resetModelColors,
     setModelColor,
 } from "./settings.js";
 
@@ -70,7 +68,6 @@ function flairCompletions(prefix: string): AutocompleteItem[] | null {
                 label: "clear",
                 description: "Clear all model colours",
             },
-            { value: "reset", label: "reset", description: "Restore defaults" },
         ].filter((i) => i.value.startsWith(partial));
     }
 
@@ -126,8 +123,7 @@ function showHelp(ctx: ExtensionContext): void {
             "  list                    List all model colours\n" +
             "  add <name> <color>      Assign/update a model colour\n" +
             "  remove <name>           Remove a model colour\n" +
-            "  clear                   Clear all model colours\n" +
-            "  reset                   Restore defaults\n\n" +
+            "  clear                   Clear all model colours\n\n" +
             "Colors can be hex (#c15f3c) or rgb(r, g, b).",
         "info",
     );
@@ -212,16 +208,6 @@ function cmdClear(ctx: ExtensionContext): void {
     }
 }
 
-function cmdReset(ctx: ExtensionContext): void {
-    resetModelColors();
-    saveModelColors(ctx.ui.notify);
-    ctx.ui.notify("Model colours reset to defaults.", "info");
-    if (ctx.model) {
-        applyModelIndicator(ctx, ctx.model.id);
-        restartAnimationIfNeeded(ctx, getCurrentModelColor());
-    }
-}
-
 // Registration
 
 export function registerFlairCommand(pi: ExtensionAPI): void {
@@ -257,9 +243,6 @@ export function registerFlairCommand(pi: ExtensionAPI): void {
                     cmdClear(ctx);
                     return;
 
-                case "reset":
-                    cmdReset(ctx);
-                    return;
 
                 default:
                     ctx.ui.notify(
