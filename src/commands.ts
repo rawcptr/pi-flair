@@ -28,7 +28,7 @@ import {
 import {
     applyModelIndicator,
     getCurrentModelColor,
-    restartAnimationIfNeeded,
+    shineAnimation,
 } from "./indicator.js";
 import {
     clearModelColors,
@@ -175,7 +175,7 @@ function refreshAfterChange(ctx: ExtensionContext, message: string): void {
     ctx.ui.notify(message, "info");
     if (ctx.model) {
         applyModelIndicator(ctx, ctx.model.id);
-        restartAnimationIfNeeded(ctx, getCurrentModelColor());
+        shineAnimation.restartIfNeeded(ctx, getCurrentModelColor());
     }
 }
 
@@ -221,7 +221,7 @@ function cmdRemove(ctx: ExtensionContext, name: string | undefined, scope: "glob
     ctx.ui.notify(`Removed "${name}" from model colours.`, "info");
     if (ctx.model) {
         applyModelIndicator(ctx, ctx.model.id);
-        restartAnimationIfNeeded(ctx, getCurrentModelColor());
+        shineAnimation.restartIfNeeded(ctx, getCurrentModelColor());
     }
 }
 
@@ -232,7 +232,7 @@ function cmdClear(ctx: ExtensionContext, scope: "global" | "local"): void {
     ctx.ui.notify(`Cleared ${label} model colours.`, "info");
     if (ctx.model) {
         applyModelIndicator(ctx, ctx.model.id);
-        restartAnimationIfNeeded(ctx, getCurrentModelColor());
+        shineAnimation.restartIfNeeded(ctx, getCurrentModelColor());
     }
 }
 

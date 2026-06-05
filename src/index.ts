@@ -13,10 +13,7 @@ import {
     applyModelIndicator,
     buildGlowMessage,
     getCurrentModelColor,
-    isAnimationRunning,
-    resetShineVerb,
-    startShineAnimation,
-    stopShineAnimation,
+    shineAnimation,
     syncModelFromContext,
 } from "./indicator.js";
 import { resetSettings, applyOverrides, getSpinnerChars, getSpinnerIntervalMs, readFlairSettings } from "./settings.js";
@@ -45,8 +42,8 @@ export default function (pi: ExtensionAPI) {
 
     pi.on("model_select", (event, ctx) => {
         applyModelIndicator(ctx, event.model.id);
-        if (isAnimationRunning()) {
-            startShineAnimation(ctx, getCurrentModelColor());
+        if (shineAnimation.isRunning) {
+            shineAnimation.start(ctx, getCurrentModelColor());
         }
     });
 
@@ -65,20 +62,20 @@ export default function (pi: ExtensionAPI) {
             frames: [...getSpinnerChars()],
             intervalMs: getSpinnerIntervalMs(),
         });
-        startShineAnimation(ctx, getCurrentModelColor());
+        shineAnimation.start(ctx, getCurrentModelColor());
     });
 
     pi.on("turn_start", (_event, ctx) => {
         syncModelFromContext(ctx);
-        resetShineVerb(ctx, getCurrentModelColor());
+        shineAnimation.resetVerb(ctx, getCurrentModelColor());
     });
 
     pi.on("agent_end", () => {
-        stopShineAnimation();
+        shineAnimation.stop();
     });
 
     pi.on("session_shutdown", () => {
-        stopShineAnimation();
+        shineAnimation.stop();
     });
 
     // /flair command handler

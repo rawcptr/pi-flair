@@ -95,75 +95,71 @@ export function syncModelFromContext(ctx: ExtensionContext): boolean {
 
 // Shine animation state machine
 
-let shineTimer: ReturnType<typeof setInterval> | undefined;
-let currentVerb = "";
-let shineFrame = 0;
-let fullTextLen = 0;
+export class ShineAnimation {
+	private timer: ReturnType<typeof setInterval> | undefined;
+	private verb = "";
+	private frame = 0;
+	private textLength = 0;
 
-/** True if the shine animation timer is currently running. */
-export function isAnimationRunning(): boolean {
-	return shineTimer !== undefined;
-}
+	/** True if the shine animation timer is currently running. */
+	get isRunning(): boolean {
+		return this.timer !== undefined;
+	}
 
-/** Start the shine sweep animation. Picks a fresh verb and begins the interval. */
-export function startShineAnimation(
-	ctx: ExtensionContext,
-	color: RgbColor,
-): void {
-	stopShineAnimation();
+	/** Start the shine sweep animation. Picks a fresh verb and begins the interval. */
+	start(ctx: ExtensionContext, color: RgbColor): void {
+		this.stop();
 
-	currentVerb = pickRandomVerb();
-	fullTextLen = currentVerb.length + 3; // + "..."
-	shineFrame = 0;
-	ctx.ui.setWorkingMessage(buildShineMessage(color, currentVerb, -1));
+		this.verb = pickRandomVerb();
+		this.textLength = this.verb.length + 3; // + "..."
+		this.frame = 0;
+		ctx.ui.setWorkingMessage(buildShineMessage(color, this.verb, -1));
 
-	// Sweep left-to-right across the full text (verb + "..."),
-	// then pause for the same duration.
-	const cycleLen = fullTextLen * 2;
-	shineTimer = setInterval(() => {
-		shineFrame = (shineFrame + 1) % cycleLen;
-		const shinePos = shineFrame < fullTextLen ? shineFrame : -1;
-		ctx.ui.setWorkingMessage(
-			buildShineMessage(color, currentVerb, shinePos),
-		);
-	}, getShineIntervalMs());
-}
+		// Sweep left-to-right across the full text (verb + "..."),
+		// then pause for the same duration.
+		const cycleLen = this.textLength * 2;
+		this.timer = setInterval(() => {
+			this.frame = (this.frame + 1) % cycleLen;
+			const shinePos = this.frame < this.textLength ? this.frame : -1;
+			ctx.ui.setWorkingMessage(
+				buildShineMessage(color, this.verb, shinePos),
+			);
+		}, getShineIntervalMs());
+	}
 
-/** Stop the shine animation timer. */
-export function stopShineAnimation(): void {
-	if (shineTimer) {
-		clearInterval(shineTimer);
-		shineTimer = undefined;
+	/** Stop the shine animation timer. */
+	stop(): void {
+		if (this.timer) {
+			clearInterval(this.timer);
+			this.timer = undefined;
+		}
+	}
+
+	/**
+	 * Restart the animation if it's currently running.
+	 * Used after model colour changes so it picks up the new colour
+	 * without being started from a stopped state.
+	 */
+	restartIfNeeded(ctx: ExtensionContext, color: RgbColor): void {
+		if (!this.timer) return;
+		this.stop();
+		this.start(ctx, color);
+	}
+
+	/**
+	 * Pick a fresh verb without restarting the animation timer.
+	 * Used at the start of each LLM turn during multi-turn agent runs.
+	 */
+	resetVerb(ctx: ExtensionContext, color: RgbColor): void {
+		this.verb = pickRandomVerb();
+		this.textLength = this.verb.length + 3;
+		this.frame = 0;
+		ctx.ui.setWorkingMessage(buildShineMessage(color, this.verb, -1));
 	}
 }
 
-/**
- * Restart the shine animation if it's currently running.
- * Used after model colour changes so the animation picks up the new colour
- * without being started from a stopped state.
- */
-export function restartAnimationIfNeeded(
-	ctx: ExtensionContext,
-	color: RgbColor,
-): void {
-	if (!shineTimer) return;
-	stopShineAnimation();
-	startShineAnimation(ctx, color);
-}
-
-/**
- * Pick a fresh verb for the indicator without restarting the animation timer.
- * Used at the start of each LLM turn during multi-turn agent runs.
- */
-export function resetShineVerb(
-	ctx: ExtensionContext,
-	color: RgbColor,
-): void {
-	currentVerb = pickRandomVerb();
-	fullTextLen = currentVerb.length + 3;
-	shineFrame = 0;
-	ctx.ui.setWorkingMessage(buildShineMessage(color, currentVerb, -1));
-}
+/** Singleton shine animation instance for the extension lifecycle. */
+export const shineAnimation = new ShineAnimation();
 
 // Indicator setup
 
