@@ -19,24 +19,24 @@ import {
     stopShineAnimation,
     syncModelFromContext,
 } from "./indicator.js";
-import { loadSettings, getSpinnerChars, getSpinnerIntervalMs, readFlairSettings } from "./settings.js";
+import { resetSettings, applyOverrides, getSpinnerChars, getSpinnerIntervalMs, readFlairSettings } from "./settings.js";
 import { registerFlairCommand } from "./commands.js";
 
 export default function (pi: ExtensionAPI) {
     pi.on("session_start", (_event, ctx) => {
         // Overlay persisted user settings on top of built-in defaults.
         // Load chain: defaults → global → local (last wins)
-        loadSettings();
+        resetSettings();
         const global = readFlairSettings(
             join(getAgentDir(), "flair.json"),
             ctx.ui.notify,
         );
-        if (Object.keys(global).length > 0) loadSettings(global, "global");
+        if (Object.keys(global).length > 0) applyOverrides(global, "global");
         const local = readFlairSettings(
             join(ctx.cwd, ".pi", "flair.json"),
             ctx.ui.notify,
         );
-        if (Object.keys(local).length > 0) loadSettings(local, "local");
+        if (Object.keys(local).length > 0) applyOverrides(local, "local");
 
         if (ctx.model) {
             applyModelIndicator(ctx, ctx.model.id);

@@ -3,7 +3,7 @@
  *
  * All runtime state lives in a single internal object, initialised from
  * hardcoded defaults. Persisted user settings (from ~/.pi/agent/flair.json
- * and .pi/flair.json) are overlaid on top via loadSettings() during
+ * and .pi/flair.json) are overlaid on top via applyOverrides() during
  * session_start.
  *
  * Load chain (last wins):
@@ -67,28 +67,28 @@ function createDefaultState(): RuntimeState {
 	};
 }
 
-// Load / reload (starts from defaults then overlays persisted settings)
+/** Reset runtime state to hardcoded defaults. */
+export function resetSettings(): void {
+	state = createDefaultState();
+}
 
-export function loadSettings(persisted?: FlairSettings, scope?: "global" | "local"): void {
-	if (!persisted && scope === undefined) {
-		state = createDefaultState();
-		return;
-	}
-	if (!persisted) return;
+/**
+ * Apply persisted settings on top of current runtime state.
+ * When modelColors are present, `scope` controls which partition they write to
+ * (defaults to "global").
+ */
+export function applyOverrides(persisted: FlairSettings, scope?: "global" | "local"): void {
 	if (persisted.spinner) state.spinnerChars = [...persisted.spinner];
 	if (persisted.spinnerIntervalMs !== undefined) state.spinnerIntervalMs = persisted.spinnerIntervalMs;
 	if (persisted.shineIntervalMs !== undefined) state.shineIntervalMs = persisted.shineIntervalMs;
 	if (persisted.verbs) state.verbs = [...persisted.verbs];
 	if (persisted.modelFallbackColor) state.fallbackColor = { ...persisted.modelFallbackColor };
-	if (scope === "global" && persisted.modelColors) {
-		state.globalModelColors = { ...persisted.modelColors };
-	}
-	if (scope === "local" && persisted.modelColors) {
-		state.localModelColors = { ...persisted.modelColors };
-	}
-	// No scope → backward-compat path (tests, legacy callers)
-	if (!scope && persisted.modelColors) {
-		state.globalModelColors = { ...persisted.modelColors };
+	if (persisted.modelColors) {
+		if (scope === "local") {
+			state.localModelColors = { ...persisted.modelColors };
+		} else {
+			state.globalModelColors = { ...persisted.modelColors };
+		}
 	}
 }
 
