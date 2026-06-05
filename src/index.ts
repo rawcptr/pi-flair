@@ -10,8 +10,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
-import { Box, Text } from "@earendil-works/pi-tui";
-import { ansiFg, RESET, type RgbColor } from "./color.js";
 import {
     applyModelIndicator,
     buildGlowMessage,
@@ -22,7 +20,7 @@ import {
     stopShineAnimation,
     syncModelFromContext,
 } from "./indicator.js";
-import { loadSettings, getModelColors, getSpinnerChars, getSpinnerIntervalMs, type FlairSettings } from "./settings.js";
+import { loadSettings, getSpinnerChars, getSpinnerIntervalMs, type FlairSettings } from "./settings.js";
 import { registerFlairCommand } from "./commands.js";
 
 /**
@@ -109,52 +107,7 @@ export default function (pi: ExtensionAPI) {
         stopShineAnimation();
     });
 
-    // Custom message renderer — displays detected model names with styling
-
-    type FlairMessageDetails = { word?: string; type?: "model"; color?: RgbColor };
-
-    pi.registerMessageRenderer("flair-word", (message, _options, theme) => {
-        const details = message.details as FlairMessageDetails | undefined;
-        const content = typeof message.content === "string" ? message.content : "";
-
-        const styledWord =
-            details?.type === "model" && details.color && details.word
-                ? ansiFg(details.color, 0.2) + details.word + RESET
-                : "";
-
-        const displayText = styledWord
-            ? `${theme.fg("accent", theme.bold("✨ "))}${styledWord}  ${content}`
-            : content;
-
-        const box = new Box(1, 0, (s) => theme.bg("customMessageBg", s));
-        box.addChild(new Text(displayText, 1, 0));
-        return box;
-    });
-
     // /flair command handler
 
     registerFlairCommand(pi);
-
-    // Echo detected model names as custom messages
-
-    pi.on("message_end", (event, _ctx) => {
-        if (event.message.role !== "user") return;
-        const content = event.message.content;
-        if (typeof content !== "string") return;
-
-        // Detect model names — echo as flair-word
-        for (const [name, color] of Object.entries(getModelColors())) {
-            if (name.length < 2) continue;
-            const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-            if (new RegExp(`\\b${escaped}\\b`, "i").test(content)) {
-                pi.sendMessage({
-                    customType: "flair-word",
-                    content: `Model "${name}" glow`,
-                    display: true,
-                    details: { word: name, type: "model", color },
-                });
-                return;
-            }
-        }
-    });
 }
